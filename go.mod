@@ -11,6 +11,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/spf13/cobra v1.9.1
+	golang.org/x/crypto v0.46.0
 )
 
 require (
@@ -44,7 +45,6 @@ require (
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
 	github.com/utxorpc/go-codegen v0.18.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.32.0 // indirect

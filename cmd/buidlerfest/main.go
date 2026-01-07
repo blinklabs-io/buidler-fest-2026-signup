@@ -48,7 +48,7 @@ This tool demonstrates "vibe coding" with Claude Code to build Cardano applicati
 	rootCmd.PersistentFlags().String("ogmios-url", "", "Ogmios WebSocket URL")
 	rootCmd.PersistentFlags().String("kupo-url", "", "Kupo HTTP URL")
 	rootCmd.PersistentFlags().String("utxorpc-url", "", "UTxO RPC (Apollo) gRPC URL")
-	rootCmd.PersistentFlags().String("mnemonic", "", "Wallet mnemonic (24 words)")
+	rootCmd.PersistentFlags().String("mnemonic", "", "Wallet mnemonic (24 words) - WARNING: visible in shell history/process list, prefer --mnemonic-file")
 	rootCmd.PersistentFlags().String("mnemonic-file", "", "Path to file containing mnemonic")
 	rootCmd.PersistentFlags().Bool("skip-submit", false, "Output unsigned transaction without submitting")
 

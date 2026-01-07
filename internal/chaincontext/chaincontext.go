@@ -147,12 +147,17 @@ func (k *KupoContext) GetUTxOsByAddress(address string) ([]UTxO.UTxO, error) {
 	}
 
 	var utxos []UTxO.UTxO
+	var conversionErrors int
 	for _, match := range matches {
 		utxo, err := kupoMatchToUTxO(match)
 		if err != nil {
+			conversionErrors++
 			continue
 		}
 		utxos = append(utxos, utxo)
+	}
+	if conversionErrors > 0 {
+		return utxos, fmt.Errorf("failed to convert %d of %d UTxOs (partial result returned)", conversionErrors, len(matches))
 	}
 	return utxos, nil
 }

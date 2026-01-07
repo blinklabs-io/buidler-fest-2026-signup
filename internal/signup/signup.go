@@ -14,6 +14,7 @@ import (
 	"github.com/blinklabs-io/buidler-fest-2026-signup/internal/chaincontext"
 	"github.com/blinklabs-io/buidler-fest-2026-signup/internal/config"
 	"github.com/blinklabs-io/buidler-fest-2026-signup/internal/wallet"
+	"golang.org/x/crypto/blake2b"
 )
 
 // SignupResult contains the result of a signup operation
@@ -95,9 +96,9 @@ func ExecuteSignup(cfg *config.Config, w *wallet.Wallet, buyerAddress string, sk
 		return nil, fmt.Errorf("failed to serialize transaction: %w", err)
 	}
 
-	// Calculate transaction hash from CBOR bytes
-	// Use the serialized bytes to generate hash
-	result.TxHash = fmt.Sprintf("%x", txBytes[:32]) // Temporary - will be updated on submit
+	// Calculate transaction hash using blake2b-256 of the transaction body
+	txHash := blake2b.Sum256(txBytes)
+	result.TxHash = hex.EncodeToString(txHash[:])
 
 	// If we have a wallet and not skipping submit, sign and submit
 	if w != nil && !skipSubmit {
@@ -178,14 +179,31 @@ func getIssuerState(cc chaincontext.ChainContext, cfg *config.Config) (*UTxO.UTx
 }
 
 // hasToken checks if a UTxO contains a specific token
-// This is a simplified check - assumes the issuer UTxO with datum is the correct one
 func hasToken(utxo UTxO.UTxO, policyHex string, assetNameBytes []byte) bool {
-	// For now, check if this UTxO has a datum (the issuer state has a datum)
-	// A full implementation would check the actual token
-	if utxo.Output.IsPostAlonzo {
-		// Check if there's a datum (the state UTxO has inline datum)
-		return utxo.Output.PostAlonzo.Datum != nil
+	if !utxo.Output.IsPostAlonzo {
+		return false
 	}
+
+	// Check multi-asset value for the beacon token
+	multiAsset := utxo.Output.PostAlonzo.Amount.Am.Value
+	if len(multiAsset) == 0 {
+		return false
+	}
+
+	// Convert asset name bytes to hex for comparison
+	assetNameHex := hex.EncodeToString(assetNameBytes)
+
+	// Iterate through policies to find our beacon token
+	for policy, assets := range multiAsset {
+		if policy.Value == policyHex {
+			for assetName := range assets {
+				if assetName.HexString() == assetNameHex {
+					return true
+				}
+			}
+		}
+	}
+
 	return false
 }
 
@@ -326,8 +344,11 @@ func buildSignupTx(
 		slog.Warn("failed to get tip, using default validity", "error", err)
 		tip = 0
 	}
-	if tip > 0 {
+	if tip > 100 {
 		builder = builder.SetValidityStart(int64(tip - 100))
+		builder = builder.SetTtl(int64(tip + 600))
+	} else if tip > 0 {
+		builder = builder.SetValidityStart(0)
 		builder = builder.SetTtl(int64(tip + 600))
 	}
 

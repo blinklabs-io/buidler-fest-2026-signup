@@ -59,7 +59,7 @@ func createWalletFromMnemonic(mnemonic, network string) (*Wallet, error) {
 	case "preprod":
 		bursaNetwork = "preprod"
 	default:
-		bursaNetwork = "preview"
+		return nil, fmt.Errorf("unsupported network: %s (supported: mainnet, preview, preprod)", network)
 	}
 
 	// Create wallet using bursa with default derivation paths

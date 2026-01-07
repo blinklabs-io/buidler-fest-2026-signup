@@ -55,8 +55,11 @@ export UTXORPC_URL=localhost:50051
 # Sign up interactively (prompts for wallet info)
 ./bin/buidlerfest signup --profile preview
 
-# Sign up with mnemonic (auto-signs and submits)
-./bin/buidlerfest signup --profile preview --mnemonic "your 24 word mnemonic..."
+# Sign up with mnemonic file (auto-signs and submits) - RECOMMENDED
+./bin/buidlerfest signup --profile preview --mnemonic-file /path/to/mnemonic.txt
+
+# Sign up with mnemonic via CLI (WARNING: visible in shell history/process list)
+# ./bin/buidlerfest signup --profile preview --mnemonic "your 24 word mnemonic..."
 
 # Generate unsigned transaction for external signing
 ./bin/buidlerfest signup --profile preview --address addr_test1... --skip-submit

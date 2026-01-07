@@ -202,6 +202,13 @@ func LoadFromEnvFile(path string) error {
 		if len(parts) == 2 {
 			key := strings.TrimSpace(parts[0])
 			value := strings.TrimSpace(parts[1])
+			// Strip surrounding quotes (both single and double)
+			if len(value) >= 2 {
+				if (value[0] == '"' && value[len(value)-1] == '"') ||
+					(value[0] == '\'' && value[len(value)-1] == '\'') {
+					value = value[1 : len(value)-1]
+				}
+			}
 			if os.Getenv(key) == "" {
 				_ = os.Setenv(key, value)
 			}
