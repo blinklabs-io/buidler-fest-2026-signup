@@ -1,5 +1,5 @@
 # Buidler Fest 2026 Signup CLI
-.PHONY: build clean test lint run help
+.PHONY: build clean test lint fmt mod-tidy run run-info install help
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")

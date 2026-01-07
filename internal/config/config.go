@@ -184,6 +184,9 @@ func (c *Config) ParseIssuerScriptRef() (string, int, error) {
 	if _, err := fmt.Sscanf(parts[1], "%d", &idx); err != nil {
 		return "", 0, fmt.Errorf("invalid issuer script ref index: %s", parts[1])
 	}
+	if idx < 0 {
+		return "", 0, fmt.Errorf("invalid issuer script ref index: must be non-negative, got %d", idx)
+	}
 	return parts[0], idx, nil
 }
 

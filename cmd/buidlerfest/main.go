@@ -149,7 +149,7 @@ func runInfo(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Buidler Fest 2026 Signup Information\n")
 	fmt.Printf("=====================================\n")
 	fmt.Printf("Network:        %s\n", cfg.Network)
-	fmt.Printf("Ticket Price:   %d ADA\n", cfg.TicketPrice/1_000_000)
+	fmt.Printf("Ticket Price:   %.6f ADA\n", float64(cfg.TicketPrice)/1_000_000)
 	fmt.Printf("Treasury:       %s\n", cfg.Treasury)
 	fmt.Printf("Ticket Policy:  %s\n", cfg.TicketPolicy)
 	fmt.Printf("\nCurrent Status:\n")

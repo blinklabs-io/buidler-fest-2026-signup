@@ -165,7 +165,14 @@ This section records the prompts given to Claude and their outcomes throughout d
     - Pinned golangci-lint to v2.1.6
 
 - **Prompt**: Update with additional prompts you've been given and check the PR reviews, again. The review bots can take 10 to 15 minutes. Ensure you update our documentation as you go. Request reviews from the bots after making code changes.
-- **Outcome**: Updated CLAUDE.md prompt log with session history
+- **Outcome**: Addressed second round of review feedback (6 issues from cubic-dev-ai):
+  - Fixed integer division for ADA display (now shows decimal precision)
+  - Added validation for non-negative script ref index
+  - Added missing .PHONY targets to Makefile (fmt, mod-tidy, run-info, install)
+  - Handle SetWalletAsChangeAddress error with logging
+  - Fixed spend redeemer attachment using CollectFrom() instead of AddLoadedUTxOs()
+  - Removed .claude/settings.local.json from git tracking (added to .gitignore)
+  - Updated CLAUDE.md with prompt log
 
 ## Reference
 

@@ -265,7 +265,11 @@ func buildSignupTx(
 
 	// Set wallet
 	builder = builder.SetWalletFromBech32(buyerAddr)
-	builder, _ = builder.SetWalletAsChangeAddress()
+	var changeErr error
+	builder, changeErr = builder.SetWalletAsChangeAddress()
+	if changeErr != nil {
+		slog.Warn("failed to set change address from wallet", "error", changeErr)
+	}
 
 	// Calculate ticket name
 	ticketName := fmt.Sprintf("TICKET%d", ticketCounter)
@@ -273,16 +277,16 @@ func buildSignupTx(
 	// Add buyer inputs (UTxOs)
 	builder = builder.AddLoadedUTxOs(buyerUtxos...)
 
-	// Add issuer state input with spend redeemer
-	buyTicketRedeemer := PlutusData.PlutusData{
-		TagNr:          121, // Constructor 0 (BuyTicket)
-		PlutusDataType: PlutusData.PlutusArray,
-		Value:          PlutusData.PlutusIndefArray{},
+	// Add issuer state input with spend redeemer using CollectFrom
+	buyTicketRedeemer := Redeemer.Redeemer{
+		Tag: Redeemer.SPEND,
+		Data: PlutusData.PlutusData{
+			TagNr:          121, // Constructor 0 (BuyTicket)
+			PlutusDataType: PlutusData.PlutusArray,
+			Value:          PlutusData.PlutusIndefArray{},
+		},
 	}
-	builder = builder.AddLoadedUTxOs(*issuerState)
-	// Note: For proper script spending, we need to use the correct Apollo API
-	// This may require AttachDatum and setting redeemers differently
-	_ = buyTicketRedeemer // Will be used when proper API is available
+	builder = builder.CollectFrom(*issuerState, buyTicketRedeemer)
 
 	// Add reference script input
 	refTxHash, refIdx, err := cfg.ParseIssuerScriptRef()
