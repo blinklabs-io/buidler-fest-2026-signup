@@ -6,6 +6,12 @@ import (
 	"fmt"
 
 	"github.com/Salvionied/apollo/serialization/Address"
+	"github.com/Salvionied/apollo/serialization/Amount"
+	"github.com/Salvionied/apollo/serialization/Asset"
+	"github.com/Salvionied/apollo/serialization/AssetName"
+	"github.com/Salvionied/apollo/serialization/MultiAsset"
+	"github.com/Salvionied/apollo/serialization/PlutusData"
+	"github.com/Salvionied/apollo/serialization/Policy"
 	"github.com/Salvionied/apollo/serialization/Transaction"
 	"github.com/Salvionied/apollo/serialization/TransactionInput"
 	"github.com/Salvionied/apollo/serialization/TransactionOutput"
@@ -15,6 +21,7 @@ import (
 	"github.com/Salvionied/apollo/txBuilding/Backend/BlockFrostChainContext"
 	"github.com/SundaeSwap-finance/kugo"
 	"github.com/blinklabs-io/buidler-fest-2026-signup/internal/config"
+	"github.com/fxamacker/cbor/v2"
 )
 
 // ChainContext provides an interface for querying the blockchain
@@ -141,7 +148,7 @@ func NewKupoContext(cfg *config.Config) (*KupoContext, error) {
 }
 
 func (k *KupoContext) GetUTxOsByAddress(address string) ([]UTxO.UTxO, error) {
-	matches, err := k.client.Matches(context.Background(), kugo.Pattern(address))
+	matches, err := k.client.Matches(context.Background(), kugo.Pattern(address), kugo.OnlyUnspent())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get matches: %w", err)
 	}
@@ -149,7 +156,7 @@ func (k *KupoContext) GetUTxOsByAddress(address string) ([]UTxO.UTxO, error) {
 	var utxos []UTxO.UTxO
 	var conversionErrors int
 	for _, match := range matches {
-		utxo, err := kupoMatchToUTxO(match)
+		utxo, err := k.kupoMatchToUTxO(match)
 		if err != nil {
 			conversionErrors++
 			continue
@@ -171,7 +178,7 @@ func (k *KupoContext) GetUTxOByRef(txHash string, index int) (*UTxO.UTxO, error)
 	if len(matches) == 0 {
 		return nil, fmt.Errorf("utxo not found: %s#%d", txHash, index)
 	}
-	utxo, err := kupoMatchToUTxO(matches[0])
+	utxo, err := k.kupoMatchToUTxO(matches[0])
 	if err != nil {
 		return nil, err
 	}
@@ -194,9 +201,8 @@ func (k *KupoContext) SubmitTx(tx Transaction.Transaction) (string, error) {
 }
 
 // kupoMatchToUTxO converts a Kupo match to an Apollo UTxO
-// Note: This is a simplified implementation - for full compatibility, additional
-// type conversions would be needed for the Apollo library's specific types
-func kupoMatchToUTxO(match kugo.Match) (UTxO.UTxO, error) {
+// This handles multi-assets and inline datums required for script UTxOs
+func (k *KupoContext) kupoMatchToUTxO(match kugo.Match) (UTxO.UTxO, error) {
 	addr, err := Address.DecodeAddress(match.Address)
 	if err != nil {
 		return UTxO.UTxO{}, fmt.Errorf("failed to decode address: %w", err)
@@ -207,27 +213,76 @@ func kupoMatchToUTxO(match kugo.Match) (UTxO.UTxO, error) {
 		return UTxO.UTxO{}, fmt.Errorf("failed to decode tx id: %w", err)
 	}
 
-	// Calculate total lovelace from value
+	// Extract lovelace and multi-assets from Kupo value
 	var totalLovelace int64
+	multiAsset := make(MultiAsset.MultiAsset[int64])
+
 	for policyId, assets := range match.Value {
-		for assetId, assetAmount := range assets {
-			if policyId == "ada" && assetId == "lovelace" {
-				totalLovelace = assetAmount.Int64()
-				break
+		if policyId == "ada" {
+			for assetId, assetAmount := range assets {
+				if assetId == "lovelace" {
+					totalLovelace = assetAmount.Int64()
+				}
+			}
+		} else {
+			// This is a native asset
+			policy, err := Policy.New(policyId)
+			if err != nil {
+				continue // Skip invalid policies
+			}
+			assetMap := make(Asset.Asset[int64])
+			for assetName, assetAmount := range assets {
+				an := AssetName.NewAssetNameFromHexString(assetName)
+				if an != nil {
+					assetMap[*an] = assetAmount.Int64()
+				}
+			}
+			if len(assetMap) > 0 {
+				multiAsset[*policy] = assetMap
 			}
 		}
 	}
 
-	// Create a simple lovelace-only value for now
-	// Multi-asset support would require proper Apollo type conversion
-	val := Value.PureLovelaceValue(totalLovelace)
+	// Create the value with multi-assets
+	var alonzoAmount Amount.AlonzoAmount
+	alonzoAmount.Coin = totalLovelace
+	alonzoAmount.Value = multiAsset
+
+	// Create PostAlonzo output
+	output := TransactionOutput.TransactionOutput{
+		IsPostAlonzo: true,
+		PostAlonzo: TransactionOutput.TransactionOutputAlonzo{
+			Address: addr,
+			Amount: Value.AlonzoValue{
+				Am:        alonzoAmount,
+				Coin:      totalLovelace,
+				HasAssets: len(multiAsset) > 0,
+			},
+		},
+	}
+
+	// Handle inline datum if present
+	if match.DatumHash != "" && match.DatumType == "inline" {
+		// Fetch the datum from Kupo
+		datumHex, err := k.client.Datum(context.Background(), match.DatumHash)
+		if err == nil && datumHex != "" {
+			datumBytes, err := hex.DecodeString(datumHex)
+			if err == nil {
+				var pd PlutusData.PlutusData
+				if err := cbor.Unmarshal(datumBytes, &pd); err == nil {
+					datumOpt := PlutusData.DatumOptionInline(&pd)
+					output.PostAlonzo.Datum = &datumOpt
+				}
+			}
+		}
+	}
 
 	return UTxO.UTxO{
 		Input: TransactionInput.TransactionInput{
 			TransactionId: txIdBytes,
 			Index:         int(match.OutputIndex),
 		},
-		Output: TransactionOutput.SimpleTransactionOutput(addr, val),
+		Output: output,
 	}, nil
 }
 

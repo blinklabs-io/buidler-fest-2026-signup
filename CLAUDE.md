@@ -174,6 +174,16 @@ This section records the prompts given to Claude and their outcomes throughout d
   - Removed .claude/settings.local.json from git tracking (added to .gitignore)
   - Updated CLAUDE.md with prompt log
 
+### Session 5: Kupo/Ogmios Support Fix
+- **Prompt**: I've updated the .env files to include my Kupo and Ogmios URLs, but running the binary fails. I cannot get info from either preview or mainnet profile. It appears to be a UTxO lookup error.
+- **Outcome**: Fixed Kupo chain context implementation:
+  - Rewrote `kupoMatchToUTxO` to properly handle multi-assets (beacon tokens)
+  - Added support for inline datums by fetching from Kupo's datum endpoint
+  - Created PostAlonzo UTxO outputs instead of simple outputs
+  - Added `kugo.OnlyUnspent()` filter to Kupo queries
+  - Added imports for Apollo types: Amount, Asset, AssetName, MultiAsset, Policy, PlutusData
+  - Added cbor library for datum deserialization
+
 ## Reference
 
 - [txpipe/buidler-fest-2026-buy-ticket](https://github.com/txpipe/buidler-fest-2026-buy-ticket) - Original Tx3 implementation
