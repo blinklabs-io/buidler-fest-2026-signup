@@ -13,13 +13,13 @@ import (
 
 // Wallet holds wallet information for signing transactions
 type Wallet struct {
-	Mnemonic              string
-	PaymentAddress        string
-	PaymentVKey           []byte
-	PaymentSKey           []byte
-	PaymentExtendedSKey   []byte
-	StakeAddress          string
-	Network               string
+	Mnemonic            string
+	PaymentAddress      string
+	PaymentVKey         []byte
+	PaymentSKey         []byte
+	PaymentExtendedSKey []byte
+	StakeAddress        string
+	Network             string
 }
 
 // LoadWallet loads a wallet from mnemonic string or file

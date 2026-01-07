@@ -239,7 +239,7 @@ func buildSignupTx(
 	// Create Apollo builder with Blockfrost chain context
 	bfCtx, ok := cc.(*chaincontext.BlockfrostContext)
 	if !ok {
-		return nil, "", fmt.Errorf("Apollo transaction building requires Blockfrost chain context")
+		return nil, "", fmt.Errorf("apollo transaction building requires Blockfrost chain context")
 	}
 	apolloCC := bfCtx.GetClient()
 

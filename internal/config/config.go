@@ -37,19 +37,19 @@ type Config struct {
 
 // NetworkConfig holds network-specific parameters
 type NetworkConfig struct {
-	Name                string
-	NetworkMagic        uint32
-	BlockfrostBaseURL   string
-	BootstrapPeerHost   string
-	BootstrapPeerPort   uint16
-	AddressPrefix       string
-	IssuerBeaconPolicy  string
-	IssuerBeaconName    string
-	Treasury            string
-	IssuerScriptRef     string
-	TicketPolicy        string
-	IssuerAddress       string
-	TicketPrice         uint64
+	Name               string
+	NetworkMagic       uint32
+	BlockfrostBaseURL  string
+	BootstrapPeerHost  string
+	BootstrapPeerPort  uint16
+	AddressPrefix      string
+	IssuerBeaconPolicy string
+	IssuerBeaconName   string
+	Treasury           string
+	IssuerScriptRef    string
+	TicketPolicy       string
+	IssuerAddress      string
+	TicketPrice        uint64
 }
 
 var networks = map[string]NetworkConfig{
@@ -203,7 +203,7 @@ func LoadFromEnvFile(path string) error {
 			key := strings.TrimSpace(parts[0])
 			value := strings.TrimSpace(parts[1])
 			if os.Getenv(key) == "" {
-				os.Setenv(key, value)
+				_ = os.Setenv(key, value)
 			}
 		}
 	}
