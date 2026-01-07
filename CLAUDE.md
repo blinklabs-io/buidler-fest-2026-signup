@@ -129,6 +129,44 @@ This section records the prompts given to Claude and their outcomes throughout d
     - `.env.mainnet` - Mainnet configuration
   - Created `Makefile` for development convenience
 
+### Session 3: PR Creation and CI Fixes
+- **Prompt**: Update any documentation as necessary and commit using git commit -s and without GPG signature.
+- **Outcome**: Committed changes with signed-off-by header
+
+- **Prompt**: Create a pull request.
+- **Outcome**: Created PR #1 with implementation
+
+- **Prompt**: Check if CI passes on the PR
+- **Outcome**:
+  - Discovered lint timeout issues
+  - Created `.golangci.yml` with 5m timeout and v2 config format
+  - Fixed gofmt formatting issues in config.go and wallet.go
+  - Fixed errcheck: explicitly ignoring os.Setenv return value
+  - Fixed staticcheck: lowercase error string in signup.go
+  - Updated CI to use golangci-lint-action v7 with golangci-lint v2.1.6
+  - All CI checks passed after fixes
+
+### Session 4: Code Review Feedback
+- **Prompt**: Make sure you read and process the review feedback as well. You may need to ask the reviewer bots to review your code. Leave no TODOs or unfinished code.
+- **Outcome**: Addressed all 11 issues from cubic-dev-ai bot:
+  - **Security fixes**:
+    - Added warning about --mnemonic flag visibility in shell history/process list
+    - Updated README to recommend --mnemonic-file over --mnemonic
+    - Changed wallet to return error for unsupported networks instead of silent fallback
+  - **Code quality fixes**:
+    - Fixed transaction hash calculation using blake2b.Sum256()
+    - Implemented proper token verification in hasToken() using policy.Value and assetName.HexString()
+    - Added quote stripping for .env file values (single and double quotes)
+    - Added error tracking and reporting in Kupo UTxO conversion
+    - Fixed potential integer underflow when tip < 100
+  - **Build/CI fixes**:
+    - Updated Go version to 1.24+ (required by Apollo dependency)
+    - Fixed Windows binary filename in release workflow
+    - Pinned golangci-lint to v2.1.6
+
+- **Prompt**: Update with additional prompts you've been given and check the PR reviews, again. The review bots can take 10 to 15 minutes. Ensure you update our documentation as you go. Request reviews from the bots after making code changes.
+- **Outcome**: Updated CLAUDE.md prompt log with session history
+
 ## Reference
 
 - [txpipe/buidler-fest-2026-buy-ticket](https://github.com/txpipe/buidler-fest-2026-buy-ticket) - Original Tx3 implementation
