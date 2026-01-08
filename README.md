@@ -102,6 +102,14 @@ make fmt
 
 See [CLAUDE.md](CLAUDE.md) for detailed architecture documentation and the development prompt log.
 
+## Verified Transactions
+
+Successful ticket purchases made with this CLI:
+
+| Ticket | Network | Transaction |
+|--------|---------|-------------|
+| TICKET28 | Mainnet | [3214a24ccde878ad7872cc1a6ed09aa825cf879d63563930b37f5854148062a7](https://cardanoscan.io/transaction/3214a24ccde878ad7872cc1a6ed09aa825cf879d63563930b37f5854148062a7) |
+
 ## References
 
 - [txpipe/buidler-fest-2026-buy-ticket](https://github.com/txpipe/buidler-fest-2026-buy-ticket) - Original Tx3 implementation
