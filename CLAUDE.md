@@ -205,6 +205,12 @@ This section records the prompts given to Claude and their outcomes throughout d
   - The script integrity hash is computed based on Plutus version and cost models
   - V2 vs V3 use different cost models, causing hash mismatch
 
+- **Prompt**: Insufficient fee error (109736 provided, 225913 required)
+- **Outcome**: Added fee padding and execution unit estimation:
+  - Added `SetEstimationExUnitsRequired()` to enable Plutus script execution estimation
+  - Added `SetFeePadding(200000)` to account for potential underestimation
+  - Plutus execution costs are not perfectly estimated without on-chain evaluation
+
 ## Reference
 
 - [txpipe/buidler-fest-2026-buy-ticket](https://github.com/txpipe/buidler-fest-2026-buy-ticket) - Original Tx3 implementation

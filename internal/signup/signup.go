@@ -277,6 +277,10 @@ func buildSignupTx(
 		return nil, "", fmt.Errorf("apollo transaction building requires Blockfrost or Ogmios chain context")
 	}
 
+	// Enable execution unit estimation for Plutus scripts and add fee padding
+	// Fee padding accounts for potential underestimation of script execution costs
+	builder = builder.SetEstimationExUnitsRequired().SetFeePadding(200000)
+
 	// Set wallet
 	builder = builder.SetWalletFromBech32(buyerAddr)
 	var changeErr error
