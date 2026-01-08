@@ -295,6 +295,26 @@ func buildSignupTx(
 	// Add buyer inputs (UTxOs)
 	builder = builder.AddLoadedUTxOs(buyerUtxos...)
 
+	// Select and add collateral (pure ADA UTxO with at least 5 ADA)
+	var collateralUtxo *UTxO.UTxO
+	for i := range buyerUtxos {
+		utxo := &buyerUtxos[i]
+		// Check if this is a pure ADA UTxO (no tokens)
+		hasTokens := false
+		if utxo.Output.IsPostAlonzo {
+			hasTokens = utxo.Output.PostAlonzo.Amount.HasAssets
+		}
+		if !hasTokens && utxo.Output.GetAmount().GetCoin() >= 5_000_000 {
+			collateralUtxo = utxo
+			break
+		}
+	}
+	if collateralUtxo != nil {
+		builder = builder.AddCollateral(*collateralUtxo)
+	} else {
+		slog.Warn("no suitable collateral UTxO found; transaction may fail")
+	}
+
 	// Add issuer state input with spend redeemer using CollectFrom
 	buyTicketRedeemer := Redeemer.Redeemer{
 		Tag: Redeemer.SPEND,

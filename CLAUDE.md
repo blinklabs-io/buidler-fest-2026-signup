@@ -211,6 +211,12 @@ This section records the prompts given to Claude and their outcomes throughout d
   - Added `SetFeePadding(200000)` to account for potential underestimation
   - Plutus execution costs are not perfectly estimated without on-chain evaluation
 
+- **Prompt**: Collateral required error (declaredSpending: inputs, mismatchReason: transaction failed)
+- **Outcome**: Added collateral selection and attachment:
+  - Select pure ADA UTxO (no tokens) with at least 5 ADA from buyer's UTxOs
+  - Add collateral using `builder.AddCollateral()`
+  - Plutus transactions require collateral as protection against failed script execution
+
 ## Reference
 
 - [txpipe/buidler-fest-2026-buy-ticket](https://github.com/txpipe/buidler-fest-2026-buy-ticket) - Original Tx3 implementation
