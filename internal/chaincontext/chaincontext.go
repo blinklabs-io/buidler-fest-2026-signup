@@ -19,7 +19,9 @@ import (
 	"github.com/Salvionied/apollo/serialization/Value"
 	"github.com/Salvionied/apollo/txBuilding/Backend/Base"
 	"github.com/Salvionied/apollo/txBuilding/Backend/BlockFrostChainContext"
+	"github.com/Salvionied/apollo/txBuilding/Backend/OgmiosChainContext"
 	"github.com/SundaeSwap-finance/kugo"
+	ogmigo "github.com/SundaeSwap-finance/ogmigo/v6"
 	"github.com/blinklabs-io/buidler-fest-2026-signup/internal/config"
 	"github.com/fxamacker/cbor/v2"
 )
@@ -38,7 +40,11 @@ func NewChainContext(cfg *config.Config) (ChainContext, error) {
 	switch cfg.GetChainContextType() {
 	case "blockfrost":
 		return NewBlockfrostContext(cfg)
-	case "kupo", "ogmios":
+	case "ogmios":
+		// Use combined Ogmios+Kupo context for full functionality
+		return NewOgmiosContext(cfg)
+	case "kupo":
+		// Kupo only - limited functionality (no tx building)
 		return NewKupoContext(cfg)
 	case "utxorpc":
 		return NewUTxORPCContext(cfg)
@@ -127,6 +133,81 @@ func (b *BlockfrostContext) SubmitTx(tx Transaction.Transaction) (string, error)
 // GetClient returns the underlying Blockfrost client for use with Apollo
 func (b *BlockfrostContext) GetClient() *BlockFrostChainContext.BlockFrostChainContext {
 	return b.client
+}
+
+// OgmiosContext implements ChainContext using Apollo's OgmiosChainContext (Ogmios + Kupo)
+type OgmiosContext struct {
+	client  *OgmiosChainContext.OgmiosChainContext
+	cfg     *config.Config
+	network int
+}
+
+// NewOgmiosContext creates a new Ogmios+Kupo chain context using Apollo's OgmiosChainContext
+func NewOgmiosContext(cfg *config.Config) (*OgmiosContext, error) {
+	var networkId int
+	switch cfg.Network {
+	case "mainnet":
+		networkId = 1
+	default:
+		networkId = 0
+	}
+
+	// Create ogmigo client
+	ogmiosClient := ogmigo.New(ogmigo.WithEndpoint(cfg.OgmiosURL))
+
+	// Create kugo client
+	kupoClient := kugo.New(kugo.WithEndpoint(cfg.KupoURL))
+
+	// Create Apollo's OgmiosChainContext
+	occ := OgmiosChainContext.NewOgmiosChainContext(ogmiosClient, kupoClient)
+	occ.Init()
+
+	return &OgmiosContext{
+		client:  &occ,
+		cfg:     cfg,
+		network: networkId,
+	}, nil
+}
+
+func (o *OgmiosContext) GetUTxOsByAddress(address string) ([]UTxO.UTxO, error) {
+	addr, err := Address.DecodeAddress(address)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode address: %w", err)
+	}
+	return o.client.Utxos(addr)
+}
+
+func (o *OgmiosContext) GetUTxOByRef(txHash string, index int) (*UTxO.UTxO, error) {
+	return o.client.GetUtxoFromRef(txHash, index)
+}
+
+func (o *OgmiosContext) GetProtocolParameters() (*Base.ProtocolParameters, error) {
+	params, err := o.client.GetProtocolParams()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get protocol params: %w", err)
+	}
+	return &params, nil
+}
+
+func (o *OgmiosContext) GetTip() (uint64, error) {
+	slot, err := o.client.LastBlockSlot()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get tip: %w", err)
+	}
+	return uint64(slot), nil
+}
+
+func (o *OgmiosContext) SubmitTx(tx Transaction.Transaction) (string, error) {
+	txId, err := o.client.SubmitTx(tx)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(txId.Payload), nil
+}
+
+// GetClient returns the underlying OgmiosChainContext for use with Apollo
+func (o *OgmiosContext) GetClient() *OgmiosChainContext.OgmiosChainContext {
+	return o.client
 }
 
 // KupoContext implements ChainContext using Kupo API

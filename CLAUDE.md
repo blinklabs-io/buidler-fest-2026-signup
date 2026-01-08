@@ -184,6 +184,27 @@ This section records the prompts given to Claude and their outcomes throughout d
   - Added imports for Apollo types: Amount, Asset, AssetName, MultiAsset, Policy, PlutusData
   - Added cbor library for datum deserialization
 
+### Session 6: Datum Parsing and OgmiosChainContext Support
+- **Prompt**: It's still failing. Maybe you should test your work. At the very least, we should be able to get the latest info. Deep dive and discover the root cause and fix the issues.
+- **Outcome**: Fixed datum extraction and added Apollo's OgmiosChainContext:
+  - **Datum parsing fix**: Changed type assertion from `PlutusIndefArray` to support both `PlutusDefArray` and `PlutusIndefArray` (CBOR can decode to either)
+  - **Counter value fix**: Changed type assertion from `int64` to support both `int64` and `uint64` (CBOR unsigned integers decode to uint64)
+  - Tested successfully with mainnet Kupo (preview Kupo was 48 days behind)
+
+- **Prompt**: I am getting a failure in transaction building: "apollo transaction building requires Blockfrost chain context" which means you didn't implement all the required functionality. A Kupo and Ogmios address should suffice for Apollo.
+- **Outcome**: Integrated Apollo's built-in OgmiosChainContext:
+  - Added `OgmiosContext` wrapper type that uses Apollo's `OgmiosChainContext.NewOgmiosChainContext()`
+  - `OgmiosContext` wraps both `ogmigo` (Ogmios) and `kugo` (Kupo) clients
+  - Implements all methods of our `ChainContext` interface
+  - Updated `buildSignupTx` to accept both `BlockfrostContext` and `OgmiosContext`
+  - Successfully tested with mainnet Kupo+Ogmios configuration
+
+- **Prompt**: Script integrity hash mismatch error when submitting signed transaction
+- **Outcome**: Fixed Plutus version for reference script:
+  - Changed `AddReferenceInput` to `AddReferenceInputV3` since Aiken compiles to Plutus V3 by default
+  - The script integrity hash is computed based on Plutus version and cost models
+  - V2 vs V3 use different cost models, causing hash mismatch
+
 ## Reference
 
 - [txpipe/buidler-fest-2026-buy-ticket](https://github.com/txpipe/buidler-fest-2026-buy-ticket) - Original Tx3 implementation

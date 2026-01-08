@@ -227,15 +227,26 @@ func extractTicketCounter(utxo UTxO.UTxO) (int, error) {
 	// The datum is a simple constructor with ticket_counter as field
 	// TicketerDatum { ticket_counter: Int }
 	if datum.TagNr == 121 && datum.PlutusDataType == PlutusData.PlutusArray {
-		fields, ok := datum.Value.(PlutusData.PlutusIndefArray)
-		if !ok {
-			return 0, fmt.Errorf("unexpected datum structure")
+		// Handle both definite and indefinite length arrays from CBOR decoding
+		var fields []PlutusData.PlutusData
+		switch v := datum.Value.(type) {
+		case PlutusData.PlutusDefArray:
+			fields = v
+		case PlutusData.PlutusIndefArray:
+			fields = v
+		default:
+			return 0, fmt.Errorf("unexpected datum structure: %T", datum.Value)
 		}
+
 		if len(fields) > 0 {
 			counterData := fields[0]
 			if counterData.PlutusDataType == PlutusData.PlutusInt {
-				if counter, ok := counterData.Value.(int64); ok {
-					return int(counter), nil
+				// Handle both signed and unsigned integers from CBOR
+				switch v := counterData.Value.(type) {
+				case uint64:
+					return int(v), nil
+				case int64:
+					return int(v), nil
 				}
 			}
 		}
@@ -254,14 +265,17 @@ func buildSignupTx(
 	ticketCounter int,
 ) (*apollo.Apollo, string, error) {
 
-	// Create Apollo builder with Blockfrost chain context
-	bfCtx, ok := cc.(*chaincontext.BlockfrostContext)
-	if !ok {
-		return nil, "", fmt.Errorf("apollo transaction building requires Blockfrost chain context")
-	}
-	apolloCC := bfCtx.GetClient()
+	// Create Apollo builder with appropriate chain context
+	var builder *apollo.Apollo
 
-	builder := apollo.New(apolloCC)
+	switch ctx := cc.(type) {
+	case *chaincontext.BlockfrostContext:
+		builder = apollo.New(ctx.GetClient())
+	case *chaincontext.OgmiosContext:
+		builder = apollo.New(ctx.GetClient())
+	default:
+		return nil, "", fmt.Errorf("apollo transaction building requires Blockfrost or Ogmios chain context")
+	}
 
 	// Set wallet
 	builder = builder.SetWalletFromBech32(buyerAddr)
@@ -288,12 +302,12 @@ func buildSignupTx(
 	}
 	builder = builder.CollectFrom(*issuerState, buyTicketRedeemer)
 
-	// Add reference script input
+	// Add reference script input (Aiken compiles to Plutus V3)
 	refTxHash, refIdx, err := cfg.ParseIssuerScriptRef()
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to parse script ref: %w", err)
 	}
-	builder = builder.AddReferenceInput(refTxHash, refIdx)
+	builder = builder.AddReferenceInputV3(refTxHash, refIdx)
 
 	// Mint ticket token using Unit
 	mintRedeemer := PlutusData.PlutusData{
