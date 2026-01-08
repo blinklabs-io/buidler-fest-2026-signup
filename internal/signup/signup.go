@@ -277,9 +277,11 @@ func buildSignupTx(
 		return nil, "", fmt.Errorf("apollo transaction building requires Blockfrost or Ogmios chain context")
 	}
 
-	// Enable execution unit estimation for Plutus scripts and add fee padding
-	// Fee padding accounts for potential underestimation of script execution costs
-	builder = builder.SetEstimationExUnitsRequired().SetFeePadding(200000)
+	// Add fee padding for Plutus script execution costs
+	// Note: We use fixed execution units because Apollo's OgmiosChainContext has a bug
+	// where EvaluateTx returns keys like "spend" instead of "spend:0", causing
+	// execution unit estimation to fail silently
+	builder = builder.SetFeePadding(200000)
 
 	// Set wallet
 	builder = builder.SetWalletFromBech32(buyerAddr)
@@ -300,9 +302,14 @@ func buildSignupTx(
 	for i := range buyerUtxos {
 		utxo := &buyerUtxos[i]
 		// Check if this is a pure ADA UTxO (no tokens)
+		// Must check both HasAssets flag AND actual MultiAsset content
 		hasTokens := false
 		if utxo.Output.IsPostAlonzo {
-			hasTokens = utxo.Output.PostAlonzo.Amount.HasAssets
+			hasTokens = utxo.Output.PostAlonzo.Amount.HasAssets ||
+				len(utxo.Output.PostAlonzo.Amount.Am.Value) > 0
+		} else {
+			// Pre-Alonzo: check if there are any multi-assets
+			hasTokens = len(utxo.Output.PreAlonzo.Amount.Am.Value) > 0
 		}
 		if !hasTokens && utxo.Output.GetAmount().GetCoin() >= 5_000_000 {
 			collateralUtxo = utxo
@@ -316,12 +323,17 @@ func buildSignupTx(
 	}
 
 	// Add issuer state input with spend redeemer using CollectFrom
+	// Use fixed execution units since Apollo's OgmiosChainContext estimation is broken
 	buyTicketRedeemer := Redeemer.Redeemer{
 		Tag: Redeemer.SPEND,
 		Data: PlutusData.PlutusData{
 			TagNr:          121, // Constructor 0 (BuyTicket)
 			PlutusDataType: PlutusData.PlutusArray,
 			Value:          PlutusData.PlutusIndefArray{},
+		},
+		ExUnits: Redeemer.ExecutionUnits{
+			Mem:   500000,    // 500k memory units
+			Steps: 200000000, // 200M CPU steps
 		},
 	}
 	builder = builder.CollectFrom(*issuerState, buyTicketRedeemer)
@@ -334,7 +346,8 @@ func buildSignupTx(
 	builder = builder.AddReferenceInputV3(refTxHash, refIdx)
 
 	// Mint ticket token using Unit
-	mintRedeemer := PlutusData.PlutusData{
+	// Use fixed execution units since Apollo's OgmiosChainContext estimation is broken
+	mintRedeemerData := PlutusData.PlutusData{
 		TagNr:          121, // Constructor 0 (MintTicket)
 		PlutusDataType: PlutusData.PlutusArray,
 		Value:          PlutusData.PlutusIndefArray{},
@@ -346,7 +359,11 @@ func buildSignupTx(
 	}
 	builder = builder.MintAssetsWithRedeemer(mintUnit, Redeemer.Redeemer{
 		Tag:  Redeemer.MINT,
-		Data: mintRedeemer,
+		Data: mintRedeemerData,
+		ExUnits: Redeemer.ExecutionUnits{
+			Mem:   500000,    // 500k memory units
+			Steps: 200000000, // 200M CPU steps
+		},
 	})
 
 	// Output 1: Payment to treasury

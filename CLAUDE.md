@@ -217,6 +217,13 @@ This section records the prompts given to Claude and their outcomes throughout d
   - Add collateral using `builder.AddCollateral()`
   - Plutus transactions require collateral as protection against failed script execution
 
+- **Prompt**: Transaction still failing - execution units were [0, 0]
+- **Outcome**: Fixed execution units by providing fixed values directly:
+  - Discovered Apollo's OgmiosChainContext has a bug: EvaluateTx returns keys like "spend" instead of "spend:0"
+  - Apollo's updateExUnits() expects keys with index (e.g., "spend:0"), so estimation fails silently
+  - Workaround: Set fixed execution units (500k mem, 200M steps) directly in redeemers
+  - Removed `SetEstimationExUnitsRequired()` since it doesn't work with OgmiosChainContext
+
 ## Reference
 
 - [txpipe/buidler-fest-2026-buy-ticket](https://github.com/txpipe/buidler-fest-2026-buy-ticket) - Original Tx3 implementation
