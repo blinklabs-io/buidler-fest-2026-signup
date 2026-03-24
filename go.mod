@@ -7,7 +7,9 @@ toolchain go1.24.11
 require (
 	github.com/Salvionied/apollo v1.5.0
 	github.com/SundaeSwap-finance/kugo v1.3.0
+	github.com/SundaeSwap-finance/ogmigo/v6 v6.2.0
 	github.com/blinklabs-io/bursa v0.11.1
+	github.com/fxamacker/cbor/v2 v2.9.0
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/spf13/cobra v1.9.1
@@ -15,9 +17,8 @@ require (
 )
 
 require (
-	filippo.io/edwards25519 v1.1.0 // indirect
+	filippo.io/edwards25519 v1.1.1 // indirect
 	github.com/ProjectZKM/Ziren/crates/go-runtime/zkvm_runtime v0.0.0-20251001021608-1fe7b43fc4d6 // indirect
-	github.com/SundaeSwap-finance/ogmigo/v6 v6.2.0 // indirect
 	github.com/aws/aws-sdk-go v1.55.6 // indirect
 	github.com/bits-and-blooms/bitset v1.20.0 // indirect
 	github.com/blinklabs-io/gouroboros v0.145.0 // indirect
@@ -32,7 +33,6 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 // indirect
 	github.com/ethereum/go-ethereum v1.16.7 // indirect
 	github.com/fivebinaries/go-cardano-serialization v0.0.0-20220907134105-ec9b85086588 // indirect
-	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/holiman/uint256 v1.3.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
