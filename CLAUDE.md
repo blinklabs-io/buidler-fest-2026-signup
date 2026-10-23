@@ -11,7 +11,7 @@ This repository serves two purposes:
 
 ## Technology Stack
 
-- **Language**: Go 1.25+
+- **Language**: Go 1.26+
 - **Blockchain**: Cardano (Preview and Mainnet)
 - **Key Libraries**:
   - Apollo - Cardano transaction building

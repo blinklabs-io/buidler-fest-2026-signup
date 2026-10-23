@@ -1,8 +1,6 @@
 module github.com/blinklabs-io/buidler-fest-2026-signup
 
-go 1.25.7
-
-toolchain go1.25.8
+go 1.26.10
 
 require (
 	github.com/Salvionied/apollo v1.5.0
